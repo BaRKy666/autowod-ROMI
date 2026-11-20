@@ -6,11 +6,9 @@ on:
     # GitHub's scheduler is a best-effort queue: over September 2026 these runs
     # started 113-177 minutes after their cron time, and the lag keeps growing.
     # So we fire hours early and the job sleeps until the exact booking time
-    # (BOOKING_TIME, Europe/Madrid — DST included). The margins below are 5h
-    # and 3h in summer, 6h and 4h in winter. Two crons because GitHub also
-    # drops scheduled runs outright every few days — the second only matters
-    # when the first never fires, so it gets a margin of its own.
-    - cron: '0 6 * * *'
+    # (BOOKING_TIME, Europe/Madrid — DST included).
+    - cron: '0 0 * * *'
+    - cron: '0 2 * * *'
     - cron: '0 8 * * *'
 
   # Run it manually from the Actions tab whenever you need to.
@@ -23,7 +21,7 @@ on:
         required: false
         default: ''
 
-# Scheduled runs share one queue so the two crons can't both wake up and book
+# Scheduled runs share one queue so the crons can't both wake up and book
 # the same sessions at BOOKING_TIME. Manual runs get their own group so they
 # never sit behind a scheduled run that is still waiting for its window.
 concurrency:
@@ -35,7 +33,7 @@ jobs:
     name: Book Workout Session
     runs-on: ubuntu-latest
     # Long enough to cover the wait for BOOKING_TIME plus the booking itself.
-    timeout-minutes: 420
+    timeout-minutes: 330
 
     steps:
       - name: 📥 Get latest code
@@ -53,7 +51,7 @@ jobs:
           set -euo pipefail
 
           # Never wait longer than this. It sits well above the largest margin
-          # a cron above can ask for (6h) and well below a full day, so the only
+          # a cron above can ask for and well below a full day, so the only
           # thing that trips it is GitHub starting us so late that the clock
           # rolled past midnight in Madrid — the window is behind us by then,
           # so go now instead of idling until tomorrow night.
